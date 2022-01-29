@@ -11,6 +11,15 @@ public class Matrix {
     private int lin, col;
     private double[][] m;
 
+    // constroi uma matriz com as entradas iguais a zero
+
+    public Matrix(int lin, int col) {
+
+        this.lin = lin;
+        this.col = col;
+        this.m = new double[this.lin][this.col];
+    }
+
     // metodo estatico que cria uma matriz identidade de tamanho n x n.
 
     public static Matrix identity(int n) {
@@ -20,15 +29,6 @@ public class Matrix {
         for (int i = 0; i < mat.lin; i++) mat.m[i][i] = 1.0;
 
         return mat;
-    }
-
-    // constroi uma matriz com as entradas iguais a zero
-
-    public Matrix(int lin, int col) {
-
-        this.lin = lin;
-        this.col = col;
-        this.m = new double[this.lin][this.col];
     }
 
     // constroi uma matriz e inicia as entradas a partir do vetor values.
@@ -178,52 +178,79 @@ public class Matrix {
     //                                                                                                                 //
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public Matrix multiply(Matrix m) {
+    public Matrix multiply(Matrix m) throws MatrixIncompatibleException {
 
-        // TODO: implementar!
+        if(this.col != m.lin) throw new MatrixIncompatibleException("multiplication");
 
-        return null;
+        Matrix product = new Matrix(this.lin, m.col);
+        for (int i=0; i < this.lin; i++){
+            for (int j=0; j < m.col; j++){
+                for (int k=0; k < this.col; k++){
+                    product.set(i, j, product.get(i, j) + this.get(i, k) * m.get(k, j));
+                }
+            }
+        }
+        return product;
     }
 
-    public Vector transform(Vector v) {
+    public Vector transform(Vector v) throws MatrixIncompatibleException {
 
-        // TODO: implementar!
-
-        return v;
+        Matrix tempM;
+        if (this.lin == 3){
+            tempM = new Matrix(3, 1, new double[]{v.getX(), v.getY(), 1});
+            tempM = multiply(tempM);
+        } else {
+            tempM = new Matrix(2, 1, new double[]{v.getX(), v.getY()});
+            tempM = multiply(tempM);
+        }
+        return new Vector(
+                SMALL > tempM.m[0][0] ? 0 : tempM.m[0][0],
+                SMALL > tempM.m[1][0] ? 0 : tempM.m[1][0]
+        );
     }
 
     public static Matrix get_rotation_matrix(double theta) {
-
-        // TODO: implementar!
-
-        return Matrix.identity(3);
+        theta = theta * Math.PI / 180;
+        Matrix rotationMatrix = new Matrix(2, 2);
+        rotationMatrix.set(0,0, SMALL > Math.abs(Math.cos(theta)) ? 0 : Math.cos(theta));
+        rotationMatrix.set(0,1, SMALL > Math.abs(-Math.sin(theta)) ? 0 : -Math.sin(theta));
+        rotationMatrix.set(1,0, SMALL > Math.abs(Math.sin(theta)) ? 0 : Math.sin(theta));
+        rotationMatrix.set(1,1, SMALL > Math.abs(Math.cos(theta)) ? 0 : Math.cos(theta));
+        return rotationMatrix;
     }
 
     public static Matrix get_scale_matrix(double k) {
 
-        // TODO: implementar!
-
-        return Matrix.identity(3);
+        return new Matrix(2, 2, new double[]{k, 0, 0, k});
     }
 
     public static Matrix get_translation_matrix(Vector v) {
 
-        // TODO: implementar!
-
-        return Matrix.identity(3);
+        return new Matrix(3, 3, new double[]{
+                1, 0, v.getX(),
+                0, 1, v.getY(),
+                0, 0, 1
+            }
+        );
     }
 
     public static Matrix get_transformation_matrix(Vector e1, Vector e2, Vector t) {
 
-        // TODO: implementar!
-
-        return Matrix.identity(3);
+        return new Matrix(3, 3, new double[]{
+                e1.getX(), e2.getX(), t.getX(),
+                e1.getY(), e2.getY(), t.getY(),
+                0, 0, 1
+            }
+        );
     }
 
-    public static Matrix get_observer_matrix(Vector position, Vector direction) {
-
-        // TODO: implementar!
-
-        return Matrix.identity(3);
+    public static Matrix get_observer_matrix(Vector position, Vector direction) throws MatrixIncompatibleException {
+        Vector right = get_rotation_matrix(-90).transform(direction);
+        return new Matrix(3, 3, new double[]{
+                right.getX(), direction.getX(), position.getX(),
+                right.getY(), direction.getY(), position.getY(),
+                0, 0, 1
+            }
+        );
     }
 }
