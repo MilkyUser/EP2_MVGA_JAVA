@@ -204,18 +204,18 @@ public class Matrix {
             tempM = multiply(tempM);
         }
         return new Vector(
-                SMALL > tempM.m[0][0] ? 0 : tempM.m[0][0],
-                SMALL > tempM.m[1][0] ? 0 : tempM.m[1][0]
+                SMALL > Math.abs(tempM.m[0][0]) ? 0 : tempM.m[0][0],
+                SMALL > Math.abs(tempM.m[1][0]) ? 0 : tempM.m[1][0]
         );
     }
 
     public static Matrix get_rotation_matrix(double theta) {
         theta = theta * Math.PI / 180;
         Matrix rotationMatrix = new Matrix(2, 2);
-        rotationMatrix.set(0,0, SMALL > Math.abs(Math.cos(theta)) ? 0 : Math.cos(theta));
-        rotationMatrix.set(0,1, SMALL > Math.abs(-Math.sin(theta)) ? 0 : -Math.sin(theta));
-        rotationMatrix.set(1,0, SMALL > Math.abs(Math.sin(theta)) ? 0 : Math.sin(theta));
-        rotationMatrix.set(1,1, SMALL > Math.abs(Math.cos(theta)) ? 0 : Math.cos(theta));
+        rotationMatrix.set(0,0, Math.cos(theta));
+        rotationMatrix.set(0,1, -Math.sin(theta));
+        rotationMatrix.set(1,0, Math.sin(theta));
+        rotationMatrix.set(1,1, Math.cos(theta));
         return rotationMatrix;
     }
 
@@ -251,6 +251,6 @@ public class Matrix {
                 right.getY(), direction.getY(), position.getY(),
                 0, 0, 1
             }
-        );
+        ).invert3x3();
     }
 }

@@ -6,6 +6,8 @@
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.InputMismatchException;
+import java.util.Locale;
 import java.util.Scanner;
 
 /****************************************************************************
@@ -43,7 +45,7 @@ public class EP2 {
     public static String DRAW_SHAPE_BASE = "DRAW_SHAPE_BASE";    // constante para o comando DRAW_SHAPE_BASE usada no arquivo de entrada
     public static String END = "END";                // indica fim da listagem de comandos no arquivo de entrada
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, MatrixIncompatibleException {
 
         ////////////////
         //            //
@@ -90,7 +92,7 @@ public class EP2 {
 
         // abertura do arquivo de entrada, e leitura dos parametros fixos (parametros da imagem e do observador, quantidade de shapes):
 
-        in = new Scanner(new FileInputStream(input_file_name));
+        in = new Scanner(new FileInputStream(input_file_name)).useLocale(Locale.US);
 
         width = in.nextInt();
         height = in.nextInt();
@@ -106,15 +108,20 @@ public class EP2 {
 
         // leitura dos shapes definidos no arquivo de entrada:
 
-        for (int i = 0; i < n_shapes; i++) {
+        try{
+            for (int i = 0; i < n_shapes; i++) {
+                int var = in.nextInt();
+                shapes[i] = new Shape(var);
 
-            shapes[i] = new Shape(in.nextInt());
+                for (int j = 0; j < shapes[i].nVertices(); j++) {
 
-            for (int j = 0; j < shapes[i].nVertices(); j++) {
-
-                shapes[i].add(new Vector(in.nextDouble(), in.nextDouble()));
+                    shapes[i].add(new Vector(in.nextDouble(), in.nextDouble()));
+                }
             }
+        } catch (InputMismatchException ignored){
+
         }
+
 
         // leitura dos comandos de desenho, até que uma linha com o comando "END" seja encontrada:
 
@@ -136,7 +143,7 @@ public class EP2 {
 
                 int shape_id = in.nextInt();
                 int color = in.nextInt();
-                ;
+                Matrix combined = Matrix.identity(2);
 
                 if (command.equals(DRAW_SHAPE)) {
 
@@ -144,7 +151,17 @@ public class EP2 {
                     double scale = in.nextDouble();
                     Vector t = new Vector(in.nextDouble(), in.nextDouble());
 
-                    // TODO: fala algo por aqui...
+                    Matrix rotationMatrix = Matrix.get_rotation_matrix(rotation);
+                    Matrix scaleMatrix = Matrix.get_scale_matrix(scale);
+                    Matrix translationMatrix = Matrix.get_translation_matrix(t);
+
+                    combined = rotationMatrix.multiply(scaleMatrix);
+                    Matrix temp = new Matrix(3, 3, new double[]{
+                            combined.get(0,0), combined.get(0,1), 0,
+                            combined.get(1,0), combined.get(1, 1), 0,
+                            0, 0, 1
+                    });
+                    combined = translationMatrix.multiply(temp);
                 }
 
                 if (command.equals(DRAW_SHAPE_BASE)) {
@@ -152,18 +169,21 @@ public class EP2 {
                     Vector e1 = new Vector(in.nextDouble(), in.nextDouble());
                     Vector e2 = new Vector(in.nextDouble(), in.nextDouble());
                     Vector t = new Vector(in.nextDouble(), in.nextDouble());
-
-                    // TODO: fala algo por aqui...
+                    combined = Matrix.get_transformation_matrix(e1, e2, t);
                 }
 
                 Shape s = shapes[shape_id];
 
                 for (int i = 0; i < s.nVertices() - 1; i++) {
 
-                    // TODO: fala algo por aqui...
-
                     Vector v1 = s.get(i);
                     Vector v2 = s.get(i + 1);
+
+                    v1 = combined.transform(v1);
+                    v2 = combined.transform(v2);
+                    v1 = Matrix.get_observer_matrix(observer, direction).transform(v1);
+                    v2 = Matrix.get_observer_matrix(observer, direction).transform(v2);
+
                     img.draw_line(v1, v2, color);
                 }
             } else {
